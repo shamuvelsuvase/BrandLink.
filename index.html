@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrandLink — Trusted Collaboration Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --surface-color: rgba(255, 255, 255, 0.7);
+            --surface-hover: rgba(241, 245, 249, 0.8);
+            --border-color: rgba(226, 232, 240, 0.8);
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --accent: #0f172a;
+            --accent-blue: #4f46e5;
+            --accent-glow: rgba(79, 70, 229, 0.12);
+            --transition: all 0.25s ease-in-out;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* --- NEW: AMBIENT BACKGROUND GRAPHICS --- */
+        .bg-graphics {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -2;
+            pointer-events: none;
+            overflow: hidden;
+            background-image: radial-gradient(rgba(100, 116, 139, 0.08) 1px, transparent 1px);
+            background-size: 32px 32px;
+        }
+
+        .blob {
+            position: absolute;
+            filter: blur(80px);
+            opacity: 0.5;
+            border-radius: 50%;
+            animation: floatBlob 15s infinite alternate ease-in-out;
+        }
+
+        .blob-1 {
+            top: -10%;
+            left: -10%;
+            width: 500px;
+            height: 500px;
+            background: rgba(79, 70, 229, 0.15); /* Soft Indigo */
+        }
+
+        .blob-2 {
+            bottom: -20%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: rgba(56, 189, 248, 0.12); /* Soft Sky Blue */
+            animation-delay: -5s;
+        }
+
+        .blob-3 {
+            top: 40%;
+            left: 50%;
+            width: 400px;
+            height: 400px;
+            background: rgba(236, 72, 153, 0.08); /* Soft Pink */
+            transform: translate(-50%, -50%);
+            animation-delay: -10s;
+        }
+
+        @keyframes floatBlob {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, -50px) scale(1.1); }
+        }
+
+        /* Navigation Bar */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 6%;
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-color);
+            z-index: 1000;
+        }
+
+        .logo-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            cursor: pointer;
+        }
+
+        .logo-icon {
+            width: 28px;
+            height: 28px;
+            background: var(--accent);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            list-style: none;
+            align-items: center;
+        }
+
+        .nav-links button {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .nav-links button:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-cta {
+            background: var(--accent) !important;
+            color: #ffffff !important;
+            padding: 0.65rem 1.4rem;
+            border-radius: 50px;
+            font-weight: 600 !important;
+            transition: var(--transition);
+            box-shadow: 0 6px 16px rgba(15, 23, 42, 0.15);
+            cursor: pointer;
+            border: none;
+            font-size: 0.95rem;
+        }
+
+        .nav-cta:hover {
+            background: #1e293b !important;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.2);
+        }
+
+        /* View Containers */
+        .view-container {
+            display: none;
+            padding-top: 90px;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        .view-container.active {
+            display: block;
+        }
+
+        /* HERO SECTION */
+        .hero-section {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            align-items: center;
+            padding: 5rem 6% 8rem 6%;
+            max-width: 1400px;
+            margin: 0 auto;
+            gap: 3rem;
+            min-height: calc(100vh - 90px);
+            position: relative;
+        }
+
+        .hero-content {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
+            position: relative;
+            z-index: 5;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-section h1 {
+            font-size: clamp(2.8rem, 4.5vw, 4.5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -1.5px;
+            margin-bottom: 1.25rem;
+            color: var(--text-primary);
+        }
+
+        .hero-section h1 span {
+            background: linear-gradient(135deg, var(--accent-blue), #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-section p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 520px;
+            margin-bottom: 2.5rem;
+            line-height: 1.7;
+        }
+
+        .hero-cta-group {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .cta-primary {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.9rem 2.2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15);
+        }
+
+        .cta-primary:hover {
+            background: #1e293b;
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(15, 23, 42, 0.2);
+        }
+
+        /* Hero Graphic Collage */
+        .hero-graphic-container {
+            position: relative;
+            width: 100%;
+            height: 550px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* The glassmorphism orb behind the images */
+        .glass-orb {
+            position: absolute;
+            width: 350px;
+            height: 350px;
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.1), rgba(236, 72, 153, 0.1));
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.5);
+            backdrop-filter: blur(10px);
+            z-index: 2;
+        }
+
+        .creator-node {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(255,255,255,1);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+            padding: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 3;
+            backdrop-filter: blur(10px);
+            animation: floatNode 6s ease-in-out infinite alternate;
+        }
+
+        .creator-node img {
+            width: 55px;
+            height: 55px;
+            border-radius: 12px;
+            object-fit: cover;
+        }
+
+        .creator-info h4 {
+            font-size: 0.95rem;
+            font-weight: 800;
+        }
+
+        .creator-info span {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .floating-badge-card {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255,255,255,1);
+            border-radius: 14px;
+            padding: 0.7rem 1.2rem;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.06);
+            font-size: 0.85rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 4;
+            backdrop-filter: blur(10px);
+        }
+
+        .node-1 { top: 10%; left: 5%; animation-delay: 0s; }
+        .node-2 { bottom: 15%; right: 5%; animation-delay: 2s; }
+        .card-analytics { top: 15%; right: -5%; animation: floatNode 7s ease-in-out infinite alternate-reverse; }
+        .card-contract { bottom: 25%; left: 0%; animation: floatNode 8s ease-in-out infinite alternate; }
+
+        @keyframes floatNode {
+            0% { transform: translateY(0px) rotate(0deg); }
+            100% { transform: translateY(-12px) rotate(1deg); }
+        }
+
+        /* --- NEW: SVG CURVED DIVIDER --- */
+        .custom-shape-divider-bottom-1694930232 {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            overflow: hidden;
+            line-height: 0;
+            transform: rotate(180deg);
+        }
+        .custom-shape-divider-bottom-1694930232 svg {
+            position: relative;
+            display: block;
+            width: calc(100% + 1.3px);
+            height: 80px;
+        }
+        .custom-shape-divider-bottom-1694930232 .shape-fill {
+            fill: #f8fafc; /* Matches social proof bg */
+        }
+
+        /* Social Proof & Brand Logos Bar */
+        .social-proof {
+            position: relative;
+            padding: 4rem 6%;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+            z-index: 2;
+        }
+
+        .brand-logos {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            gap: 2.5rem;
+            flex-wrap: wrap;
+            opacity: 0.5;
+            font-weight: 800;
+            font-size: 1.1rem;
+            letter-spacing: -0.5px;
+            color: var(--text-secondary);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* SECTIONS: How It Works & Reviews */
+        .section-container {
+            position: relative;
+            padding: 7rem 6%;
+            max-width: 1250px;
+            margin: 0 auto;
+            z-index: 2;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            letter-spacing: -1px;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 4rem;
+        }
+
+        .steps-grid, .reviews-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 2.5rem;
+        }
+
+        .step-card, .review-card {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            padding: 2.5rem;
+            border-radius: 24px;
+            transition: var(--transition);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.02);
+        }
+
+        .step-card:hover, .review-card:hover {
+            border-color: rgba(79, 70, 229, 0.3);
+            box-shadow: 0 20px 40px rgba(79, 70, 229, 0.08);
+            transform: translateY(-5px);
+        }
+
+        .step-number {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent-blue);
+            margin-bottom: 1.25rem;
+            display: inline-block;
+            background: rgba(79, 70, 229, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+        }
+
+        .step-card h3, .reviewer-info h4 {
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+        }
+
+        .step-card p, .review-text {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .review-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .review-text {
+            font-style: italic;
+            margin-bottom: 2rem;
+            font-size: 1.05rem;
+        }
+
+        .reviewer-info span {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* AUTH FORMS & WRAPPERS */
+        .auth-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 90px);
+            padding: 4rem 2rem;
+        }
+
+        .auth-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 1);
+            padding: 3rem;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.05);
+            position: relative;
+            z-index: 10;
+        }
+
+        .auth-card h2 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .auth-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+
+        .role-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .role-select-btn {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 1.2rem;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+        }
+
+        .role-select-btn:hover {
+            border-color: var(--accent-blue);
+            background: rgba(79, 70, 229, 0.04);
+            color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            background: rgba(255,255,255,0.9);
+            border: 1px solid var(--border-color);
+            padding: 0.85rem 1rem;
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px var(--accent-glow);
+            background: #ffffff;
+        }
+
+        .auth-submit {
+            width: 100%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 1rem;
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
+        }
+
+        .auth-submit:hover {
+            background: #1e293b;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(15, 23, 42, 0.15);
+        }
+
+        .auth-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .auth-footer a {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .auth-footer a:hover {
+            text-decoration: underline;
+        }
+
+        .back-link {
+            display: inline-block;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .back-link:hover {
+            color: var(--text-primary);
+        }
+
+        /* Dashboard Placeholder View */
+        .dashboard-placeholder {
+            padding: 10rem 5%;
+            text-align: center;
+        }
+
+        .dashboard-placeholder h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--accent-blue);
+        }
+
+        @media(max-width: 900px) {
+            .hero-section {
+                grid-template-columns: 1fr;
+                text-align: center;
+                padding-top: 4rem;
+            }
+            .hero-content {
+                align-items: center;
+            }
+            .hero-graphic-container {
+                display: none;
+            }
+            .nav-links { display: none; }
+        }
+    </style>
+    
+    <!-- UI Navigation Script -->
+    <script>
+        function switchView(viewId) {
+            const views = document.querySelectorAll('.view-container');
+            views.forEach(view => {
+                view.classList.remove('active');
+                view.style.display = 'none';
+            });
+
+            const targetView = document.getElementById(viewId);
+            if (targetView) {
+                targetView.classList.add('active');
+                targetView.style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <!-- Ambient Floating Background Graphics -->
+    <div class="bg-graphics">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav>
+        <div class="logo-wrapper" onclick="switchView('home-view')">
+            <div class="logo-icon">B</div>
+            <div class="logo">BrandLink</div>
+        </div>
+        <ul class="nav-links">
+            <li><button type="button" onclick="switchView('home-view')">Product</button></li>
+            <li><button type="button" onclick="switchView('how-it-works-view')">How It Works</button></li>
+            <li><button type="button" onclick="switchView('reviews-view')">Reviews</button></li>
+            <li><button type="button" onclick="switchView('auth-choice-view')" class="nav-cta">Get Started</button></li>
+        </ul>
+    </nav>
+
+    <!-- VIEW 1: HOME PAGE -->
+    <div id="home-view" class="view-container active" style="display: block;">
+        <section class="hero-section">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    ✨ Trusted Collaboration Platform
+                </div>
+                <h1>Connect directly with verified <span>brands & influencers</span></h1>
+                <p>Match lifestyle vloggers with data-driven brand analytics and manage secure escrow collaboration flows beautifully.</p>
+                <div class="hero-cta-group">
+                    <button type="button" class="cta-primary" onclick="switchView('auth-choice-view')">Get Started Today</button>
+                </div>
+            </div>
+
+            <!-- Hero Graphic Collage with Glassmorphism enhancements -->
+            <div class="hero-graphic-container">
+                <div class="glass-orb"></div>
+                <div class="creator-node node-1">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Creator">
+                    <div class="creator-info">
+                        <h4>Aarav Mehta</h4>
+                        <span>Tech Vlogger</span>
+                    </div>
+                </div>
+                <div class="creator-node node-2">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80" alt="Gamer">
+                    <div class="creator-info">
+                        <h4>Rohan Gaming</h4>
+                        <span>Streamer</span>
+                    </div>
+                </div>
+                <div class="floating-badge-card card-analytics">📈 98% Match Rate</div>
+                <div class="floating-badge-card card-contract">📝 Contract Secured</div>
+            </div>
+
+            <!-- Beautiful Curved SVG Divider blending into the next section -->
+            <div class="custom-shape-divider-bottom-1694930232">
+                <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
+                    <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z" class="shape-fill"></path>
+                </svg>
+            </div>
+        </section>
+
+        <!-- Social Proof Brand Logos -->
+        <div class="social-proof">
+            <div class="brand-logos">
+                <span>NOVATECH</span><span>LUMOS MEDIA</span><span>VORTEX LABS</span><span>APEX CREATIVE</span><span>ZENITH DIGITAL</span>
+            </div>
+        </div>
+
+        <section class="section-container">
+            <h2 class="section-title">How it works</h2>
+            <p class="section-subtitle">Simplified end-to-end campaign workflow.</p>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number">01</div>
+                    <h3>Create Account</h3>
+                    <p>Register securely as a brand or influencer with your specialized profile credentials.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">02</div>
+                    <h3>Match & Propose</h3>
+                    <p>Review aligned campaign requirements or discover high-performing talent instantly.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">03</div>
+                    <h3>Collaborate</h3>
+                    <p>Track deliverables, monitor campaign milestones, and secure automated payouts.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="section-container" style="padding-top: 2rem;">
+            <h2 class="section-title">User Reviews</h2>
+            <p class="section-subtitle">Feedback from our community professionals.</p>
+            <div class="reviews-grid">
+                <div class="review-card">
+                    <p class="review-text">"BrandLink made scaling our micro-influencer strategy effortless. The layout and registration pipeline are lightning fast."</p>
+                    <div class="reviewer-info">
+                        <h4>Aarav Mehta</h4>
+                        <span>Head of Marketing, NovaTech</span>
+                    </div>
+                </div>
+                <div class="review-card">
+                    <p class="review-text">"Clean design with no clutter. I secured two high-tier brand collaborations within my first week of joining."</p>
+                    <div class="reviewer-info">
+                        <h4>Ananya Sharma</h4>
+                        <span>Tech Content Creator</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- SEPARATE HOW IT WORKS VIEW -->
+    <div id="how-it-works-view" class="view-container">
+        <section class="section-container">
+            <h2 class="section-title">How BrandLink Works</h2>
+            <p class="section-subtitle">Designed for absolute clarity and transaction safety.</p>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number">01</div>
+                    <h3>Register Profile</h3>
+                    <p>Sign up securely with Supabase authentication specifying your exact professional role.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">02</div>
+                    <h3>Match & Connect</h3>
+                    <p>Filter targets by niche, budget, engagement rate, and target demographics.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">03</div>
+                    <h3>Execute & Scale</h3>
+                    <p>Collaborate seamlessly with unified communication channels and transparent milestones.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- SEPARATE REVIEWS VIEW -->
+    <div id="reviews-view" class="view-container">
+        <section class="section-container">
+            <h2 class="section-title">Client & Creator Reviews</h2>
+            <p class="section-subtitle">Real feedback from verified platform users.</p>
+            <div class="reviews-grid">
+                <div class="review-card">
+                    <p class="review-text">"BrandLink transformed how our agency sources micro-influencers. Clean UI, zero friction, and high conversion tracking."</p>
+                    <div class="reviewer-info">
+                        <h4>Aarav Mehta</h4>
+                        <span>Head of Marketing, NovaTech</span>
+                    </div>
+                </div>
+                <div class="review-card">
+                    <p class="review-text">"The cleanest platform I've used. Getting matched with high-tier tech brands took less than a day."</p>
+                    <div class="reviewer-info">
+                        <h4>Ananya Sharma</h4>
+                        <span>Tech Content Creator</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- GET STARTED CHOICE -->
+    <div id="auth-choice-view" class="view-container">
+        <div class="auth-wrapper">
+            <div class="auth-card" style="text-align: center;">
+                <button class="back-link" onclick="switchView('home-view')" style="float: left;">← Home</button>
+                <h2 style="clear: both; margin-top: 1rem;">Welcome to BrandLink</h2>
+                <p>Choose an action to proceed with your account.</p>
+                <div style="display: flex; gap: 1.5rem; margin-top: 2rem;">
+                    <button type="button" class="auth-submit" onclick="switchView('register-role-view')">Register Account</button>
+                    <button type="button" class="auth-submit" style="background: rgba(255,255,255,0.8); color: var(--text-primary); border: 1px solid var(--border-color); box-shadow: none;" onclick="switchView('login-role-view')">Sign In</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REGISTRATION ROLE SELECTOR -->
+    <div id="register-role-view" class="view-container">
+        <div class="auth-wrapper">
+            <div class="auth-card">
+                <button class="back-link" onclick="switchView('auth-choice-view')">← Back</button>
+                <h2>Create Account</h2>
+                <p>Select your user registration type.</p>
+                <div class="role-options">
+                    <button type="button" class="role-select-btn" onclick="switchView('brand-register-view')">🏢 Brand</button>
+                    <button type="button" class="role-select-btn" onclick="switchView('influencer-register-view')">✨ Influencer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BRAND REGISTRATION FORM -->
+    <div id="brand-register-view" class="view-container">
+        <div class="auth-wrapper">
+            <div class="auth-card">
+                <button class="back-link" onclick="switchView('register-role-view')">← Back</button>
+                <h2>Brand Registration</h2>
+                <p>Provide your corporate and campaign credentials.</p>
+                <form onsubmit="handleRegistration(event, 'brand')">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Company Name</label>
+                            <input type="text" id="regBrandCompany" required placeholder="Acme Corp">
+                        </div>
+                        <div class="form-group">
+                            <label>Contact Person</label>
+                            <input type="text" id="regBrandContact" required placeholder="John Doe">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Business Email</label>
+                        <input type="email" id="regBrandEmail" required placeholder="john@acme.com">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Industry Niche</label>
+                            <select id="regBrandIndustry" required>
+                                <option value="">Select industry</option>
+                                <option value="tech">Technology & SaaS</option>
+                                <option value="ecommerce">E-Commerce & Retail</option>
+                                <option value="finance">Fintech</option>
+                                <option value="lifestyle">Lifestyle & Fashion</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Company Website</label>
+                            <input type="url" id="regBrandWebsite" placeholder="https://acme.com">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Secure Password</label>
+                        <input type="password" id="regBrandPass" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="auth-submit">Complete Registration</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- INFLUENCER REGISTRATION FORM -->
+    <div id="influencer-register-view" class="view-container">
+        <div class="auth-wrapper">
+            <div class="auth-card">
+                <button class="back-link" onclick="switchView('register-role-view')">← Back</button>
+                <h2>Influencer Registration</h2>
+                <p>Provide your creator details and handles.</p>
+                <form onsubmit="handleRegistration(event, 'influencer')">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="regInfName" required placeholder="Jane Smith">
+                        </div>
+                        <div class="form-group">
+                            <label>Primary Platform</label>
+                            <select id="regInfPlatform" required>
+                                <option value="">Select platform</option>
+                                <option value="youtube">YouTube</option>
+                                <option value="instagram">Instagram</option>
+                                <option value="twitter">X / Twitter</option>
+                                <option value="multi">Multi-Platform</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Creator Email</label>
+                        <input type="email" id="regInfEmail" required placeholder="jane@creator.com">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Social Handle / URL</label>
+                            <input type="text" id="regInfHandle" required placeholder="@janesmith">
+                        </div>
+                        <div class="form-group">
+                            <label>Follower Count / Reach</label>
+                            <input type="text" id="regInfReach" required placeholder="50K - 100K">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Secure Password</label>
+                        <input type="password" id="regInfPass" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="auth-submit">Complete Registration</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIN ROLE SELECTOR -->
+    <div id="login-role-view" class="view-container">
+        <div class="auth-wrapper">
+            <div class="auth-card">
+                <button class="back-link" onclick="switchView('auth-choice-view')">← Back</button>
+                <h2>Sign In</h2>
+                <p>Select your portal access level.</p>
+                <div class="role-options">
+                    <button type="button" class="role-select-btn" onclick="switchView('brand-login-view')">🏢 Brand Login</button>
+                    <button type="button" class="role-select-btn" onclick="switchView('influencer-login-view')">✨ Influencer Login</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BRAND LOGIN PAGE -->
+    <div id="brand-login-view" class="view-container">
+        <div class="auth-wrapper">
+            <div class="auth-card">
+                <button class="back-link" onclick="switchView('login-role-view')">← Back</button>
+                <h2>Brand Portal</h2>
+                <p>Enter credentials to access your dashboard.</p>
+                <form id="brandLoginForm" onsubmit="handleSupabaseLogin(event, 'brand')">
+                    <div class="form-group">
+                        <label>Business Email</label>
+                        <input type="email" id="brandEmail" required placeholder="brand@company.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="brandPassword" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="auth-submit">Sign In as Brand</button>
+                </form>
+                <div class="auth-footer">
+                    <a onclick="switchView('forgot-password-view')">Forgot password?</a>
+                    <a onclick="switchView('brand-register-view')">Create account</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INFLUENCER LOGIN PAGE -->
+    <div id="influencer-login-view" class="view-container">
+        <div class="auth-wrapper">
+            <div class="auth-card">
+                <button class="back-link" onclick="switchView('login-role-view')">← Back</button>
+                <h2>Creator Portal</h2>
+                <p>Enter credentials to access your dashboard.</p>
+                <form id="influencerLoginForm" onsubmit="handleSupabaseLogin(event, 'influencer')">
+                    <div class="form-group">
+                        <label>Creator Email</label>
+                        <input type="email" id="influencerEmail" required placeholder="creator@gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="influencerPassword" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="auth-submit">Sign In as Influencer</button>
+                </form>
+                <div class="auth-footer">
+                    <a onclick="switchView('forgot-password-view')">Forgot password?</a>
+                    <a onclick="switchView('influencer-register-view')">Create account</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FORGOT PASSWORD -->
+    <div id="forgot-password-view" class="view-container">
+        <div class="auth-wrapper">
+            <div class="auth-card">
+                <button class="back-link" onclick="switchView('login-role-view')">← Back to Login</button>
+                <h2>Reset Password</h2>
+                <p>Enter your account email to receive a secure reset link.</p>
+                <form onsubmit="handlePasswordResetRequest(event)">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="resetEmail" required placeholder="account@example.com">
+                    </div>
+                    <button type="submit" class="auth-submit">Send Reset Link</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- UPDATE PASSWORD -->
+    <div id="update-password-view" class="view-container">
+        <div class="auth-wrapper">
+            <div class="auth-card">
+                <h2>Set New Password</h2>
+                <p>Please enter your new secure password below.</p>
+                <form onsubmit="handlePasswordUpdate(event)">
+                    <div class="form-group">
+                        <label>New Password</label>
+                        <input type="password" id="newPassword" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="auth-submit">Update Password</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- DASHBOARD PLACEHOLDER VIEW -->
+    <div id="dashboard-view" class="view-container">
+        <div class="dashboard-placeholder">
+            <h1>Main Dashboard</h1>
+            <p id="welcomeUserText" style="color: var(--text-secondary); font-size: 1.1rem; margin-bottom: 2rem;">Authentication successful. Your live dashboard module will load here next.</p>
+            <button class="cta-primary" onclick="handleLogout()">Log Out</button>
+        </div>
+    </div>
+
+    <!-- DB Logic with Password Reset Handlers -->
+    <script>
+        let supabaseClient = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const SUPABASE_URL = 'https://bqcqajskaigyhnsrmdos.supabase.co';
+                const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxY3FhanNrYWlneWhuc3JtZG9zIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk1NzUzNTIsImV4cCI6MjEwNTE1MTM1Mn0.G3xhVUDSS-AWbEgGiLJEadJNX8SfttbChpCVao1qJxI';
+                
+                if (window.supabase) {
+                    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    console.log("Supabase successfully initialized.");
+
+                    supabaseClient.auth.onAuthStateChange((event, session) => {
+                        if (event === 'PASSWORD_RECOVERY') {
+                            console.log("Password recovery mode triggered");
+                            switchView('update-password-view');
+                        }
+                    });
+
+                } else {
+                    console.warn("Supabase SDK did not load. Check network connection.");
+                }
+            } catch (error) {
+                console.error("Error setting up Supabase:", error);
+            }
+        });
+
+        async function handleRegistration(event, role) {
+            event.preventDefault();
+            if (!supabaseClient) {
+                alert("Database connection is currently unavailable."); return;
+            }
+            
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "Registering...";
+            submitBtn.disabled = true;
+
+            let email, password, userMetadata;
+            if (role === 'brand') {
+                email = document.getElementById('regBrandEmail').value;
+                password = document.getElementById('regBrandPass').value;
+                userMetadata = {
+                    role: 'brand',
+                    company_name: document.getElementById('regBrandCompany').value,
+                    contact_person: document.getElementById('regBrandContact').value,
+                    industry: document.getElementById('regBrandIndustry').value,
+                    website: document.getElementById('regBrandWebsite').value
+                };
+            } else {
+                email = document.getElementById('regInfEmail').value;
+                password = document.getElementById('regInfPass').value;
+                userMetadata = {
+                    role: 'influencer',
+                    full_name: document.getElementById('regInfName').value,
+                    platform: document.getElementById('regInfPlatform').value,
+                    handle: document.getElementById('regInfHandle').value,
+                    reach: document.getElementById('regInfReach').value
+                };
+            }
+
+            try {
+                const { data, error } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: { data: userMetadata }
+                });
+
+                if (error) {
+                    alert(`Registration failed: ${error.message}`);
+                } else {
+                    alert("Registration successful! You can now log in.");
+                    switchView(role === 'brand' ? 'brand-login-view' : 'influencer-login-view');
+                    event.target.reset();
+                }
+            } catch (err) {
+                alert("An unexpected error occurred.");
+            } finally {
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function handleSupabaseLogin(event, role) {
+            event.preventDefault();
+            if (!supabaseClient) {
+                alert("Database connection is currently unavailable."); return;
+            }
+
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "Signing in...";
+            submitBtn.disabled = true;
+
+            const emailId = role === 'brand' ? 'brandEmail' : 'influencerEmail';
+            const passId = role === 'brand' ? 'brandPassword' : 'influencerPassword';
+            
+            const email = document.getElementById(emailId).value;
+            const password = document.getElementById(passId).value;
+
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
+
+                if (error) {
+                    alert(`Login Failed: ${error.message}`);
+                } else {
+                    document.getElementById('welcomeUserText').innerText = `Welcome back, ${data.user.email}. Dashboard loading...`;
+                    switchView('dashboard-view');
+                    event.target.reset();
+                }
+            } catch (err) {
+                alert("An unexpected error occurred during login.");
+            } finally {
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function handleLogout() {
+            if (!supabaseClient) return switchView('home-view');
+            const { error } = await supabaseClient.auth.signOut();
+            if (error) {
+                alert(`Logout failed: ${error.message}`);
+            } else {
+                switchView('home-view');
+            }
+        }
+
+        async function handlePasswordResetRequest(event) {
+            event.preventDefault();
+            if (!supabaseClient) {
+                alert("Database connection is currently unavailable."); return;
+            }
+
+            const email = document.getElementById('resetEmail').value;
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "Sending...";
+            submitBtn.disabled = true;
+
+            try {
+                const currentUrl = window.location.origin + window.location.pathname;
+                const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: currentUrl,
+                });
+
+                if (error) {
+                    alert(`Failed to send link: ${error.message}`);
+                } else {
+                    alert("A password reset link has been sent to your email.");
+                    switchView('login-role-view');
+                    event.target.reset();
+                }
+            } catch (err) {
+                alert("An unexpected error occurred.");
+            } finally {
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+
+        async function handlePasswordUpdate(event) {
+            event.preventDefault();
+            if (!supabaseClient) return;
+
+            const newPassword = document.getElementById('newPassword').value;
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "Updating...";
+            submitBtn.disabled = true;
+
+            try {
+                const { data, error } = await supabaseClient.auth.updateUser({
+                    password: newPassword
+                });
+
+                if (error) {
+                    alert(`Failed to update password: ${error.message}`);
+                } else {
+                    alert("Your password has been successfully updated! You can now sign in.");
+                    switchView('login-role-view');
+                    event.target.reset();
+                }
+            } catch (err) {
+                alert("An unexpected error occurred.");
+            } finally {
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
